@@ -1,51 +1,67 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width" />
-  <title>Translation in browser using nllb-200-distilled-600M</title>
-  <style>
-    body {
-      padding: 2rem;
-      font-family: -apple-system, BlinkMacSystemFont, "Arial", sans-serif;
-    }
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Translation in browser using nllb-200-distilled-600M</title>
+		<link rel="stylesheet" href="style.css" />
+		<script type="module">
+			import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.3.0';
+			env.allowLocalModels = false; // Skip check for models hosted locally
+          
+            const c = console;
 
-    h1 {
-      font-size: 1.25rem;
-      margin-top: 0;
-    }
+            const button = document.getElementById("submit");
 
-    pre {
-      font-size: 0.875rem;
-      color: gray;
-    }
+			function progress_callback(x) {
+				if (x.status === "done") {
+					document.getElementById("status").textContent += `\ndone: ${x.file}`;
+				}
+				if (x.status === "ready") {
+					document.getElementById("status").textContent += `\nready 🔥`;
+                  	button.value = "Translate";
+    				button.disabled = false;
+				}
+			}
+			
+			function nextTick() {
+				return new Promise((resolve) => {
+					window.requestAnimationFrame(() => resolve());
+				})
+			}
+			function sleep() {
+				return new Promise((resolve) => {
+					setTimeout(() => resolve(), 30);
+				})
+			}
+			
+			const translator = await pipeline('translation', 'Xenova/nllb-200-distilled-600M', { progress_callback });
 
-    .card {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 16px;
-      border: 1px solid lightgray;
-      border-radius: 16px;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 100px;
-    }
-
-    label {
-      font-size: 0.875rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Translate in browser using nllb-200-distilled-600M</h1>
-    <pre id="status">Loading...</pre>
-    <textarea id="from" placeholder="Enter text to translate"></textarea>
-    <br><br>
-    <label for="src_lang">Source Language:</label>
-    <select id="src_lang">
+			button.addEventListener("click", async () => {
+				button.value = "Computing...";
+				button.disabled = true;
+				await nextTick();
+				await sleep();
+				const src_lang = document.getElementById("src_lang").value;
+				const tgt_lang = document.getElementById("tgt_lang").value;
+                console.log(from.textContent)
+				const to = await translator(from.value, { src_lang, tgt_lang });
+				c.log(to);
+				await nextTick();
+				document.getElementById("to").value = to[0].translation_text;
+				button.disabled = false;
+				button.value = "Translate";
+			});
+		</script>
+	</head>
+	<body>
+		<div class="card">
+			<h1>Translate in browser using nllb-200-distilled-600M</h1>
+			<pre id="status">loading...</pre>
+			<textarea id="from">My name is Julien and i like machine learning.</textarea>
+			<br>
+			<br>
+			<select id="src_lang">
 				<option value="afr_Latn">afr_Latn</option>
 				<option value="als_Latn">als_Latn</option>
 				<option value="arb_Arab">arb_Arab</option>
@@ -268,64 +284,13 @@
 				<option value="yue_Hant">yue_Hant</option>
 				<option value="zho_Hans">zho_Hans</option>
 			</select>
-    <br><br>
-    <input type="submit" id="submit" value="Translate" />
-    <br><br>
-    <textarea readonly id="to" placeholder="Translation will appear here"></textarea>
-  </div>
-  
-  <script type="module">
-    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.3.0';
-    env.allowLocalModels = false; // Skip check for models hosted locally
 
-    const c = console;
-
-    const button = document.getElementById("submit");
-
-    function progress_callback(x) {
-      if (x.status === "done") {
-        document.getElementById("status").textContent += `\ndone: ${x.file}`;
-      }
-      if (x.status === "ready") {
-        document.getElementById("status").textContent += `\nready 🔥`;
-        button.value = "Translate";
-        button.disabled = false;
-      }
-    }
-
-    function nextTick() {
-      return new Promise((resolve) => {
-        window.requestAnimationFrame(() => resolve());
-      })
-    }
-
-    function sleep() {
-      return new Promise((resolve) => {
-        setTimeout(() => resolve(), 30);
-      })
-    }
-
-    async function translateText() {
-      const translator = await pipeline('translation', 'Xenova/nllb-200-distilled-600M', { progress_callback });
-
-      button.addEventListener("click", async () => {
-        button.value = "Computing...";
-        button.disabled = true;
-        await nextTick();
-        await sleep();
-        const src_lang = document.getElementById("src_lang").value;
-        const tgt_lang = document.getElementById("tgt_lang").value;
-        const from = document.getElementById("from").value;
-        const to = await translator(from, { src_lang, tgt_lang });
-        c.log(to);
-        await nextTick();
-        document.getElementById("to").value = to[0].translation_text;
-        button.disabled = false;
-        button.value = "Translate";
-      });
-    }
-
-    translateText();
-  </script>
-</body>
+			<input type="submit" id="submit" value="Loading..." disabled />
+			
+			<br>
+			<br>
+			<textarea readonly id="to">Output will be here...</textarea>
+		</div>
+		
+	</body>
 </html>
